@@ -1,1 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Metal+Mania&family=Cinzel:wght@400;600&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --color-night: #0b0f14;
+  --color-moon: #e6edf3;
+  --color-fern: #8ee6a0;
+  --color-moss: #1f3a2a;
+
+  --font-metal: "Metal Mania", cursive;
+  --font-serif: "Cinzel", serif;
+}
+
+body {
+  color: #e6edf3;
+}
