@@ -4,13 +4,18 @@
 @theme {
   --color-night: #0b0f14;
   --color-moon: #e6edf3;
-  --color-fern: #8ee6a0;
-  --color-moss: #1f3a2a;
+    --color-fern: #f5d27a;
+  --color-moss: #1c1608;
 
   --font-metal: "Metal Mania", cursive;
   --font-serif: "Cinzel", serif;
 }
 
 body {
-  color: #e6edf3;
+  color: #f5d27a;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(80%) sepia(60%) saturate(500%) hue-rotate(5deg);
+  cursor: pointer;
 }

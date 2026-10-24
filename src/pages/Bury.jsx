@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { addProject } from '../utils/storage'
 
 // Labels for the four steps of the project burial form.
 const steps = ['Basic Info', 'Vision & Progress', "What's Left", 'Reason & Epitaph']
@@ -31,11 +32,50 @@ export default function Bury() {
     vision: '',
     completed: '',
     progress: 50,
+     unfinished: '',
+    salvage: '',
+        reason: '',
+    reasonNote: '',
+    epitaph: '',
+        willRestart: '',
+    restartDate: '',
   })
 
   // Updates a specific form field while preserving the other field values.
   // Example: update('name', 'My Project') updates only the project name.
   const update = (field, value) => setForm({ ...form, [field]: value })
+    const lines = (t) => t.split('\n').map((s) => s.trim()).filter(Boolean)
+
+  const save = () => {
+    const y1 = form.startDate.slice(0, 4)
+    const y2 = form.lastActive.slice(0, 4)
+    const years =
+      y1 && y2 && y1 !== y2 ? `${y1} - ${y2}` : y1 || y2 || String(new Date().getFullYear())
+
+    addProject({
+      id: Date.now().toString(),
+      name: form.name.trim(),
+      icon: '🪦',
+      years,
+      status: 'Buried',
+      progress: form.progress,
+      tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      summary: form.vision.trim().slice(0, 100),
+      vision: form.vision.trim(),
+      completed: lines(form.completed),
+      unfinished: lines(form.unfinished),
+      reason: form.reason,
+      reasonNote: form.reasonNote.trim(),
+      epitaph: form.epitaph.trim(),
+      salvage: lines(form.salvage),
+      link: form.link.trim(),
+      createdAt: form.startDate || new Date().toISOString().slice(0, 10),
+      buriedAt: form.lastActive || new Date().toISOString().slice(0, 10),
+            willRestart: form.willRestart === 'yes',
+      restartDate: form.willRestart === 'yes' ? form.restartDate : '',
+    })
+    navigate('/graveyard')
+  }
 
   // Validates the current step and moves to the next step if validation passes.
   const next = () => {
@@ -49,6 +89,10 @@ export default function Bury() {
     setError('')
 
     // Move to the next step of the form.
+        if (step === 3) {
+      save()
+      return
+    }
     setStep(step + 1)
   }
 
@@ -166,11 +210,143 @@ export default function Bury() {
 
             {/* Placeholder content for steps 2, 3, and 4.
                 These sections can be implemented later. */}
-            {step > 0 && (
-              <p className="py-10 text-center text-moon/70">
-                Step {step + 1} coming next...
-              </p>
-            )}
+            {step === 1 && (
+  <div className="space-y-5">
+    <div>
+      <label className="mb-2 block">What did you want to build?</label>
+      <textarea
+        rows={4}
+        className={inputClass}
+        placeholder="Describe the original vision of your project..."
+        value={form.vision}
+        onChange={(e) => update('vision', e.target.value)}
+      />
+    </div>
+
+    <div>
+      <label className="mb-2 block">What did you complete? (one per line)</label>
+      <textarea
+        rows={4}
+        className={inputClass}
+        placeholder={'Login page\nHome UI\nBasic search'}
+        value={form.completed}
+        onChange={(e) => update('completed', e.target.value)}
+      />
+    </div>
+
+    <div>
+      <label className="mb-2 flex justify-between">
+        <span>How much was finished?</span>
+        <span className="font-semibold text-fern">{form.progress}%</span>
+      </label>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="5"
+        className="w-full accent-[#f5d27a]"
+        value={form.progress}
+        onChange={(e) => update('progress', Number(e.target.value))}
+      />
+    </div>
+  </div>
+)}
+
+{step === 2 && (
+  <div className="space-y-5">
+    <div>
+      <label className="mb-2 block">What is still unfinished? (one per line)</label>
+      <textarea
+        rows={5}
+        className={inputClass}
+        placeholder={'Payment system\nMobile layout\nAdmin dashboard'}
+        value={form.unfinished}
+        onChange={(e) => update('unfinished', e.target.value)}
+      />
+    </div>
+
+    <div>
+      <label className="mb-2 block">Parts worth saving (one per line)</label>
+      <textarea
+        rows={4}
+        className={inputClass}
+        placeholder={'Auth flow\nUI kit\nDataset'}
+        value={form.salvage}
+        onChange={(e) => update('salvage', e.target.value)}
+      />
+      <p className="mt-1 text-xs text-moon/60">
+        These become "Organ Donors" you can reuse in a new project.
+      </p>
+    </div>
+  </div>
+)}
+
+{step === 3 && (
+  <div className="space-y-5">
+    <div>
+      <label className="mb-2 block">Why did it die?</label>
+      <select
+        className={inputClass}
+        value={form.reason}
+        onChange={(e) => update('reason', e.target.value)}
+      >
+        <option value="">Select a reason</option>
+        <option value="Lost motivation">Lost motivation</option>
+        <option value="Ran out of time">Ran out of time</option>
+        <option value="Technical roadblock">Technical roadblock</option>
+        <option value="Team fell apart">Team fell apart</option>
+        <option value="Better idea came">Better idea came</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div>
+      <label className="mb-2 block">Tell us more (optional)</label>
+      <textarea
+        rows={3}
+        className={inputClass}
+        placeholder="What really happened?"
+        value={form.reasonNote}
+        onChange={(e) => update('reasonNote', e.target.value)}
+      />
+    </div>
+
+    <div>
+      <label className="mb-2 block">Epitaph (a short farewell)</label>
+      <input
+        className={inputClass}
+        placeholder="e.g. Gone too soon, never shipped"
+        value={form.epitaph}
+                onChange={(e) => update('epitaph', e.target.value)}
+      />
+    </div>
+
+    <div>
+      <label className="mb-2 block">Do you want to restart this project?</label>
+      <select
+        className={inputClass}
+        value={form.willRestart}
+        onChange={(e) => update('willRestart', e.target.value)}
+      >
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </div>
+
+    {form.willRestart === 'yes' && (
+      <div>
+        <label className="mb-2 block">When will you restart?</label>
+        <input
+          type="date"
+          className={inputClass}
+          value={form.restartDate}
+          onChange={(e) => update('restartDate', e.target.value)}
+        />
+      </div>
+    )}
+  </div>
+)}
           </div>
 
           {/* Navigation buttons for moving between form steps or leaving the page. */}
@@ -189,7 +365,7 @@ export default function Bury() {
               onClick={next}
               className="rounded-lg bg-fern/90 px-7 py-3 font-semibold text-night shadow-[0_0_20px_rgba(142,230,160,0.4)] transition hover:bg-fern"
             >
-              Next →
+              {step === 3 ? 'Bury it' : 'Next →'}
             </button>
           </div>
         </main>
