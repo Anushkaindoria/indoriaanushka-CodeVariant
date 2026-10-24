@@ -1,4 +1,4 @@
-export const sampleProjects = [
+export const seedProjects = [
   {
     id: 'prepsport',
     name: 'Prepsport',
@@ -8,7 +8,7 @@ export const sampleProjects = [
     progress: 65,
     tags: ['Education', 'Productivity', 'Student Tools', 'Web'],
     summary:
-      'A platform that organizes previous-year question papers by branch and semester. The goal was to make exam preparation simpler and more structured.',
+      'A platform that organizes previous-year question papers by branch and semester.',
     vision:
       'A platform that organizes previous-year question papers by branch and semester. The goal was to make exam preparation simpler and more structured.',
     completed: ['Landing page', 'Paper listing UI'],
@@ -18,15 +18,13 @@ export const sampleProjects = [
     salvage: ['Paper listing UI'],
     createdAt: '2025-01-10',
     buriedAt: '2025-06-15',
-
-    // ProjectDetail page fields
     epitaph: 'A better way to prepare, waiting for its next chapter.',
     completion: 65,
     startDate: 'Jan 2025',
     lastActive: 'Jun 2025',
     visibility: 'Private',
     story:
-      'I wanted to build a platform where students can easily find and download previous-year question papers organized by branch, semester, and subject. The goal was to make exam preparation simpler and more structured.',
+      'Every exam season, students scramble across WhatsApp groups and random drives to find previous-year papers. Prepsport was meant to fix that: one clean place where papers are sorted by branch, semester, subject and year. The landing page and paper listing UI were built, but the backend for uploads and accounts kept growing, and exams and other commitments slowly took over.',
     reasons: [
       { title: 'Lost time', text: 'Other commitments took over.' },
       { title: 'Tech challenges', text: 'Backend became more complex.' },
@@ -57,8 +55,26 @@ export const sampleProjects = [
     salvage: ['Movie card UI'],
     createdAt: '2025-05-02',
     buriedAt: '2025-09-20',
+    epitaph: 'The credits rolled before the story ended.',
+    completion: 40,
+    startDate: 'May 2025',
+    lastActive: 'Sep 2025',
+    visibility: 'Private',
+    story:
+      'MovieCircle was imagined as a small social space for movie lovers. Friends could build shared watchlists, rate films, and see what their circle was watching. The home feed and movie cards were designed, but the idea kept expanding with chats, recommendations and reviews, and the small team could not keep up with the growing scope.',
+    reasons: [
+      { title: 'Scope grew too big', text: 'Too many features for a small team.' },
+      { title: 'Tech challenges', text: 'Friend system and ratings needed a complex backend.' },
+      { title: 'Lack of team', text: 'Teammates got busy with other work.' },
+    ],
+    features: [
+      'Shared watchlists with friends',
+      'Rate and review movies',
+      'Friend system and activity feed',
+      'Movie search with posters and details',
+    ],
+    techStack: ['React', 'CSS', 'JavaScript', 'Node.js', 'MongoDB'],
   },
-  
   {
     id: 'greencart',
     name: 'GreenCart',
@@ -76,7 +92,27 @@ export const sampleProjects = [
     salvage: ['Product grid', 'Landing page'],
     createdAt: '2024-10-05',
     buriedAt: '2025-01-18',
+    epitaph: 'Grew an idea, never reached the harvest.',
+    completion: 25,
+    startDate: 'Oct 2024',
+    lastActive: 'Jan 2025',
+    visibility: 'Private',
+    story:
+      'GreenCart aimed to be a trusted marketplace where people could buy and sell eco-friendly products, from reusable bottles to organic goods. Sellers would list verified sustainable items and buyers could shop with confidence. The landing page and product grid were ready, but the cart, payments and seller dashboard never started because college work took over.',
+    reasons: [
+      { title: 'Time ran out', text: 'College work took over.' },
+      { title: 'Tech challenges', text: 'Payments and seller flow were complex.' },
+      { title: 'Lack of team', text: 'Nobody to share the backend work.' },
+    ],
+    features: [
+      'Browse eco-friendly product listings',
+      'Seller dashboard to add and manage products',
+      'Cart and secure checkout',
+      'Verified sustainable badge for sellers',
+    ],
+    techStack: ['React', 'CSS', 'JavaScript', 'Node.js', 'MongoDB'],
   },
 ]
-
+// Samples now live in localStorage (seeded once), so this stays empty
+export const sampleProjects = []
 export const statuses = ['Buried', 'Haunting', 'Resurrected', 'Repurposed', 'Archived']

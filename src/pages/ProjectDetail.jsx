@@ -605,11 +605,40 @@ export default function ProjectDetail() {
                   <Compass className="h-4 w-4" /> Open Revival Compass
                 </Link>
               </div>
+                            <div className="relative rounded-2xl border border-[#d4a537]/30 bg-black/50 px-4 py-5 text-center backdrop-blur-[2px]">
+                <div className="flex items-center gap-3 text-left">
+                  <Zap className="h-9 w-9 shrink-0 text-[#f5d27a]" />
+                  <div>
+                    <h2 className="font-serif text-xl text-[#f5d27a]">Frankenstein Lab</h2>
+                    <p className="text-xs text-[#f5e6c0]/70">
+                      Stitch {project.name} together with another project
+                    </p>
+                  </div>
+                </div>
+
+                                <img
+                  src="/images/lab-icon.png"
+                  alt="Frankenstein Lab"
+                  className="mx-auto my-2 h-44 w-44 object-contain drop-shadow-[0_0_18px_rgba(245,210,122,0.6)]"
+                />
+
+                <Link
+                  to={`/lab/${project.id}`}
+                  className={`${goldBtn} flex w-full items-center justify-center gap-2`}
+                >
+                  <Zap className="h-4 w-4" /> Open Frankenstein Lab
+                </Link>
+              </div>
 
               {/* Quick actions (buttons are placeholders for now) */}
               <Panel>
                 <PanelTitle icon={Zap}>Quick Actions</PanelTitle>
                 <div className="space-y-2 text-sm">
+                                    {!isUser && (
+                    <p className="text-center text-xs text-[#f5e6c0]/60">
+                      Sample project. Actions are available only for projects you buried yourself.
+                    </p>
+                  )}
                   {isUser && (
                     <ActionBtn icon={Pencil} onClick={() => navigate(`/seance?edit=${project.id}`)}>
                         Edit Project

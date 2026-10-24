@@ -6,6 +6,7 @@ import Bury from './pages/Bury'
 import Graveyard from './pages/Graveyard'
 import ProjectDetail from './pages/ProjectDetail'
 import Compass from './pages/Compass'
+import Lab from './pages/Lab'
 
 export default function App() {
 
@@ -17,6 +18,7 @@ export default function App() {
       <Route path="/graveyard" element={<Graveyard />} />
       <Route path="/project/:id" element={<ProjectDetail />} />
       <Route path="/compass/:id" element={<Compass />} />
+      <Route path="/lab/:id" element={<Lab />} />
     </Routes>
   )
 }
