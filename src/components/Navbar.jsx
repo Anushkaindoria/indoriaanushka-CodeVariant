@@ -21,23 +21,25 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-end px-6 md:px-12 py-5">
-      <div className="flex items-center gap-4 md:gap-6 text-sm">
-        {links.map((l) => (
-          <NavLink
-            key={l.to}
-            to={l.to}
-            end={l.to === '/'}
-            className={({ isActive }) =>
-              `hidden sm:block ${goldBtn} ${
-                isActive ? 'border-[#f5d27a] shadow-[0_0_26px_rgba(245,210,122,0.6)]' : ''
-              }`
-            }
-          >
-            {l.label}
-          </NavLink>
-        ))}
+    <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 md:px-12 py-5">
+      {/* LEFT: Home */}
+      {links.map((l) => (
+        <NavLink
+          key={l.to}
+          to={l.to}
+          end={l.to === '/'}
+          className={({ isActive }) =>
+            `${goldBtn} ${
+              isActive ? 'border-[#f5d27a] shadow-[0_0_26px_rgba(245,210,122,0.6)]' : ''
+            }`
+          }
+        >
+          {l.label}
+        </NavLink>
+      ))}
 
+      {/* RIGHT: user name + Login / Logout */}
+      <div className="flex items-center gap-4 md:gap-6 text-sm">
         {user ? (
           <>
             <span className="hidden text-[#f5d27a] sm:block">👋 {user.name}</span>
