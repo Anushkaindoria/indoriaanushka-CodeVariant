@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import { sampleProjects } from '../data/projects'
-import { getProjects } from '../utils/storage'
+import { getProjects, deleteProject, updateProjectStatus, getNotes, saveNotes } from '../utils/storage'
 
 /* ------------------------------------------------------------------
  * Theme constants
@@ -136,6 +136,7 @@ function Row({ label, children }) {
 function ActionBtn({ icon: Icon, children, danger,onClick }) {
   return (
     <button
+        onClick={onClick}
       className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition ${
         danger
           ? 'border-red-500/40 bg-red-950/20 text-red-400 hover:border-red-400'
@@ -155,11 +156,37 @@ export default function ProjectDetail() {
   const navigate = useNavigate()
 // Only user-created projects can be edited
     const isUser = getProjects().some((p) => p.id === id)
+      const handleArchive = () => {
+    if (!isUser) return
+    updateProjectStatus(id, 'Archived')
+    navigate('/graveyard')
+  }
 
+  const handleDelete = () => {
+    if (!isUser) return
+    deleteProject(id)
+    navigate('/graveyard')
+  }
   /* State */
   const [tab, setTab] = useState('overview') // active tab
   const [mood, setMood] = useState('Still excites me') // selected mood
-  const [note, setNote] = useState('') // quick note text
+    const [note, setNote] = useState('') // quick note text
+  const [notes, setNotes] = useState(() => getNotes(id)) // saved notes
+
+  // Drop handlers (Canvas Protocol: no Save/Delete buttons)
+  const handleSaveNote = () => {
+    if (!note.trim()) return
+    const updated = [{ id: Date.now().toString(), text: note.trim() }, ...notes]
+    setNotes(updated)
+    saveNotes(id, updated)
+    setNote('')
+  }
+
+  const handleDeleteNote = (noteId) => {
+    const updated = notes.filter((n) => n.id !== noteId)
+    setNotes(updated)
+    saveNotes(id, updated)
+  }
 
   // Fallback when the id does not match any project
   if (!project) {
@@ -277,7 +304,160 @@ export default function ProjectDetail() {
               </nav>
 
               {/* ----- Tab content ----- */}
-              {tab !== 'overview' ? (
+                            {tab === 'autopsy' ? (
+                <div className="mt-10 grid gap-x-10 gap-y-10 xl:grid-cols-2">
+                  <Panel>
+                    <PanelTitle icon={Skull}>Cause of Death</PanelTitle>
+                    <p className="text-lg text-[#f5d27a]">
+                      {project.reason || project.reasons?.[0]?.title || 'Unknown'}
+                    </p>
+                    <p className="mt-2 leading-relaxed text-[#f5e6c0]/85">
+                      {project.reasonNote || project.reasons?.[0]?.text || 'No note was left behind.'}
+                    </p>
+                    <p className="mt-5 text-sm text-[#f5d27a]/80">Last words</p>
+                    <p className="mt-1 font-serif italic text-[#f5e6c0]">
+                      “{project.epitaph || 'No epitaph written.'}”
+                    </p>
+                  </Panel>
+
+                  <Panel>
+                    <PanelTitle icon={Info}>How far it got</PanelTitle>
+                    <Progress value={completion} />
+                    <p className="mt-1.5 text-xs">{completion}% complete</p>
+
+                    <p className="mt-5 text-sm text-[#f5d27a]/80">Completed</p>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      {(project.completed || []).length === 0 && (
+                        <li className="text-[#f5e6c0]/60">Nothing recorded.</li>
+                      )}
+                      {(project.completed || []).map((c) => (
+                        <li key={c} className="flex gap-2">
+                          <span className="text-[#f5d27a]">✓</span> {c}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <p className="mt-5 text-sm text-[#f5d27a]/80">Still unfinished</p>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      {(project.unfinished || []).length === 0 && (
+                        <li className="text-[#f5e6c0]/60">Nothing recorded.</li>
+                      )}
+                      {(project.unfinished || []).map((u) => (
+                        <li key={u} className="flex gap-2">
+                          <span className="text-rose-400">✗</span> {u}
+                        </li>
+                      ))}
+                    </ul>
+                  </Panel>
+
+                  <Panel className="xl:col-span-2">
+                    <PanelTitle icon={Sprout}>Organ Donors (worth saving)</PanelTitle>
+                    {(project.salvage || []).length === 0 ? (
+                      <p className="text-sm text-[#f5e6c0]/60">Nothing was marked for saving.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {project.salvage.map((s) => (
+                          <span key={s} className={`${pill} px-4 py-1 text-sm`}>
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </Panel>
+                </div>
+                            ) : tab === 'timeline' ? (
+                <div className="mt-10">
+                  <Panel>
+                    <PanelTitle icon={Clock}>Project Timeline</PanelTitle>
+                    <ol className="relative ml-3 space-y-6 border-l border-[#d4a537]/40 pl-6">
+                      {[
+                        { label: 'Started', value: project.startDate || project.createdAt, text: 'The idea was born.' },
+                        { label: 'Progress', value: `${completion}% complete`, text: (project.completed || []).slice(0, 3).join(', ') || 'Work in progress.' },
+                        { label: 'Last active', value: project.lastActive || project.buriedAt, text: 'The final push before things went quiet.' },
+                        { label: project.status, value: project.reason || project.reasons?.[0]?.title || '', text: project.epitaph || 'Laid to rest.' },
+                        ...(project.resumeDate
+                          ? [{ label: 'Planned restart', value: project.resumeDate, text: 'A date to come back.' }]
+                          : []),
+                      ].map((e) => (
+                        <li key={e.label} className="relative">
+                          <span className="absolute -left-[33px] top-1 h-3 w-3 rounded-full border-2 border-[#f5d27a] bg-black shadow-[0_0_10px_rgba(245,210,122,0.7)]" />
+                          <p className="font-serif text-lg text-[#f5d27a]">{e.label}</p>
+                          {e.value && <p className="text-sm text-[#f5e6c0]">{e.value}</p>}
+                          <p className="text-xs text-[#f5e6c0]/65">{e.text}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </Panel>
+                </div>
+                           ) : tab === 'notes' ? (
+                <div className="mt-10">
+                  <Panel>
+                    <PanelTitle icon={FileText}>Project Notes</PanelTitle>
+
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Write a note..."
+                      rows={3}
+                      className="w-full resize-none rounded-lg border border-[#d4a537]/25 bg-black/50 p-3 text-sm text-[#f5e6c0] placeholder:text-[#f5d27a]/40 focus:border-[#f5d27a] focus:outline-none"
+                    />
+
+                    <div
+                      draggable={!!note.trim()}
+                      onDragStart={(e) => e.dataTransfer.setData('text/plain', 'new-note')}
+                      className={`mt-3 rounded-lg border px-3 py-2 text-center text-sm ${
+                        note.trim()
+                          ? 'cursor-grab border-[#d4a537]/60 bg-black/60 text-[#f5d27a]'
+                          : 'border-[#d4a537]/15 bg-black/30 text-[#f5e6c0]/40'
+                      }`}
+                    >
+                      {note.trim() ? '✋ Drag this note into the Save Zone' : 'Type a note to drag it'}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <div
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          if (e.dataTransfer.getData('text/plain') === 'new-note') handleSaveNote()
+                        }}
+                        className="rounded-lg border border-dashed border-[#d4a537]/60 bg-black/50 px-2 py-4 text-center text-sm text-[#f5d27a] transition hover:border-[#f5d27a] hover:bg-[#d4a537]/15"
+                      >
+                        💾 Save Zone
+                      </div>
+                      <div
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          handleDeleteNote(e.dataTransfer.getData('text/plain'))
+                        }}
+                        className="rounded-lg border border-dashed border-red-500/50 bg-black/50 px-2 py-4 text-center text-sm text-red-300 transition hover:border-red-400 hover:bg-red-950/40"
+                      >
+                        🗑️ Delete Zone
+                      </div>
+                    </div>
+
+                    <ul className="mt-6 space-y-3">
+                      {notes.length === 0 && (
+                        <li className="text-sm text-[#f5e6c0]/60">No notes yet.</li>
+                      )}
+                      {notes.map((n) => (
+                        <li
+                          key={n.id}
+                          draggable
+                          onDragStart={(e) => e.dataTransfer.setData('text/plain', n.id)}
+                          className="cursor-grab rounded-lg border border-[#d4a537]/25 bg-black/50 p-3 text-sm text-[#f5e6c0]"
+                        >
+                          {n.text}
+                        </li>
+                      ))}
+                    </ul>
+                    {notes.length > 0 && (
+                      <p className="mt-2 text-xs text-[#f5e6c0]/50">Drag a saved note into Delete Zone to remove it.</p>
+                    )}
+                  </Panel>
+                </div>
+              ) : tab !== 'overview' ? (
                 // Placeholder for tabs that are not built yet
                 <Panel className="mt-10">
                   <p className="text-[#f5e6c0]/70">
@@ -435,8 +615,39 @@ export default function ProjectDetail() {
                         Edit Project
                     </ActionBtn>
                     )}
-                  <ActionBtn icon={Archive}>Move to Archived</ActionBtn>
-                  <ActionBtn icon={Trash2} danger>Delete</ActionBtn>
+                                    {isUser && (
+                    <>
+                      <div
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData('text/plain', id)}
+                        className="cursor-grab rounded-lg border border-[#d4a537]/50 bg-black/60 px-3 py-2 text-center text-sm text-[#f5d27a] active:cursor-grabbing"
+                      >
+                        ✋ Drag this project into a zone
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            handleArchive()
+                          }}
+                          className="rounded-lg border border-dashed border-[#d4a537]/60 bg-black/50 px-2 py-3 text-center text-xs text-[#f5d27a] transition hover:border-[#f5d27a] hover:bg-[#d4a537]/15"
+                        >
+                          🗄️ Archive
+                        </div>
+                        <div
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            handleDelete()
+                          }}
+                          className="rounded-lg border border-dashed border-red-500/50 bg-black/50 px-2 py-3 text-center text-xs text-red-300 transition hover:border-red-400 hover:bg-red-950/40"
+                        >
+                          🗑️ Delete
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </Panel>
 
@@ -466,21 +677,6 @@ export default function ProjectDetail() {
                   ))}
                 </div>
 
-                <h2 className="mb-2 mt-5 flex items-center gap-2.5 font-serif text-xl text-[#f5d27a]">
-                  <FileText className="h-5 w-5" /> Notes
-                </h2>
-                <div className="flex gap-2">
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Add a quick note..."
-                    rows={2}
-                    className="min-w-0 flex-1 resize-none rounded-lg border border-[#d4a537]/25 bg-black/50 p-2 text-sm text-[#f5e6c0] placeholder:text-[#f5d27a]/40 focus:border-[#f5d27a] focus:outline-none"
-                  />
-                  <button className="self-end rounded-lg border border-[#d4a537]/50 bg-black/60 p-2.5 text-[#f5d27a] transition hover:border-[#f5d27a]">
-                    <Save className="h-4 w-4" />
-                  </button>
-                </div>
               </Panel>
             </aside>
           </div>

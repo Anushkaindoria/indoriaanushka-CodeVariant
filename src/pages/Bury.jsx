@@ -1,76 +1,107 @@
+/**
+ * Bury page (create + edit)
+ * ---------------------------------------------------------------
+ * 4-step form to bury a project.
+ *  - /seance            -> create a new project
+ *  - /seance?edit=<id>  -> edit an existing user-created project
+ * Final step uses drag & drop (Canvas Protocol): no submit button.
+ * Projects are saved in localStorage via ../utils/storage.
+ * Theme: black + gold (matches the rest of the app)
+ */
 import { useState } from 'react'
-import Navbar from '../components/Navbar'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { addProject, getProjects, deleteProject } from '../utils/storage'
+import Navbar from '../components/Navbar'
 import DropZone from '../components/DropZone'
 import DragCard from '../components/DragCard'
+import { addProject, getProjects, deleteProject } from '../utils/storage'
 
-// Labels for the four steps of the project burial form.
+/* ---------------- Theme constants ---------------- */
+const goldBtn =
+  'rounded-lg border-2 border-[#d4a537] bg-gradient-to-b from-[#1c1608] to-black px-4 py-2 font-semibold text-[#f5d27a] shadow-[0_0_16px_rgba(212,165,55,0.35)] transition hover:border-[#f5d27a] hover:text-[#ffe9a8] hover:shadow-[0_0_26px_rgba(245,210,122,0.65)]'
+
+const inputClass =
+  'w-full rounded-lg border border-[#d4a537]/30 bg-black/70 px-4 py-3 text-[#f5e6c0] placeholder:text-[#f5d27a]/40 outline-none transition focus:border-[#f5d27a] focus:shadow-[0_0_14px_rgba(245,210,122,0.35)]'
+
+const labelClass = 'mb-2 block text-[#f5d27a]'
+
 const steps = ['Basic Info', 'Vision & Progress', "What's Left", 'Reason & Epitaph']
 
-// Common Tailwind CSS classes used by all form inputs.
-// This avoids repeating the same styling for every input field.
-const inputClass =
-  'w-full rounded-lg border border-fern/20 bg-night/70 px-4 py-3 text-moon placeholder:text-moon/40 outline-none focus:border-fern'
+// Empty form (all keys present so inputs are always controlled)
+const emptyForm = {
+  name: '',
+  tags: '',
+  link: '',
+  startDate: '',
+  lastActive: '',
+  vision: '',
+  completed: '',
+  progress: 50,
+  unfinished: '',
+  salvage: '',
+  reason: '',
+  reasonNote: '',
+  epitaph: '',
+  wantsResume: '',
+  resumeDate: '',
+}
+
+// Convert a saved project back into form values (edit mode)
+const toForm = (p) => ({
+  name: p.name || '',
+  tags: (p.tags || []).join(', '),
+  link: p.link || '',
+  startDate: p.createdAt || '',
+  lastActive: p.buriedAt || '',
+  vision: p.vision || '',
+  completed: (p.completed || []).join('\n'),
+  progress: p.progress ?? 50,
+  unfinished: (p.unfinished || []).join('\n'),
+  salvage: (p.salvage || []).join('\n'),
+  reason: p.reason || '',
+  reasonNote: p.reasonNote || '',
+  epitaph: p.epitaph || '',
+  wantsResume: p.wantsResume ? 'yes' : 'no',
+  resumeDate: p.resumeDate || '',
+})
+
+// Split a textarea into non-empty trimmed lines
+const lines = (t) => t.split('\n').map((s) => s.trim()).filter(Boolean)
 
 export default function Bury() {
-  // Allows navigation to another page, such as the Graveyard page.
   const navigate = useNavigate()
+
+  // Edit mode: ?edit=<id> in the URL
   const [params] = useSearchParams()
-  const editId = params.get('edit') // set when editing an existing project
+  const editId = params.get('edit')
   const existing = editId ? getProjects().find((p) => p.id === editId) : null
 
-  // Tracks the current step of the multi-step form.
-  // Step 0 represents the Basic Info section.
+  /* ---------------- State ---------------- */
   const [step, setStep] = useState(0)
-
-  // Stores the validation error message displayed to the user.
   const [error, setError] = useState('')
+  const [form, setForm] = useState(existing ? toForm(existing) : emptyForm)
 
-  // Stores all the information entered by the user about their project.
-  const [form, setForm] = useState(
-    existing
-      ? {
-          name: existing.name || '',
-          tags: (existing.tags || []).join(', '),
-          link: existing.link || '',
-          startDate: existing.createdAt || '',
-          lastActive: existing.buriedAt || '',
-          vision: existing.vision || '',
-          completed: (existing.completed || []).join('\n'),
-          progress: existing.progress ?? 50,
-          unfinished: (existing.unfinished || []).join('\n'),
-          salvage: (existing.salvage || []).join('\n'),
-          reason: existing.reason || '',
-          reasonNote: existing.reasonNote || '',
-          epitaph: existing.epitaph || '',
-          wantsResume: existing.wantsResume ? 'yes' : 'no',
-          resumeDate: existing.resumeDate || '',
-        }
-      : {
-          name: '', tags: '', link: '', startDate: '', lastActive: '',
-          vision: '', completed: '', progress: 50, unfinished: '', salvage: '',
-          reason: '', reasonNote: '', epitaph: '', wantsResume: '', resumeDate: '',
-        }
-  )
-
-  // Updates a specific form field while preserving the other field values.
-  // Example: update('name', 'My Project') updates only the project name.
   const update = (field, value) => setForm({ ...form, [field]: value })
-    const lines = (t) => t.split('\n').map((s) => s.trim()).filter(Boolean)
 
+  const hasSalvage = lines(form.salvage).length > 0
+
+  /* ---------------- Save ---------------- */
   const save = () => {
+    // Years label, e.g. "2025 - 2026"
     const y1 = form.startDate.slice(0, 4)
     const y2 = form.lastActive.slice(0, 4)
     const years =
       y1 && y2 && y1 !== y2 ? `${y1} - ${y2}` : y1 || y2 || String(new Date().getFullYear())
+
+    // In edit mode, remove the old copy first (same id is reused below)
     if (editId) deleteProject(editId)
+
     addProject({
+      ...(existing || {}), // keep any extra fields of the old project
       id: editId || Date.now().toString(),
       name: form.name.trim(),
-      icon: '🪦',
+      icon: existing?.icon || '🪦',
       years,
-      status: lines(form.salvage).length > 0 ? 'Repurposed' : 'Buried',
+      status: hasSalvage ? 'Repurposed' : 'Buried',
       progress: form.progress,
       tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
       summary: form.vision.trim().slice(0, 100),
@@ -80,140 +111,134 @@ export default function Bury() {
       reason: form.reason,
       reasonNote: form.reasonNote.trim(),
       epitaph: form.epitaph.trim(),
+      wantsResume: form.wantsResume === 'yes',
+      resumeDate: form.wantsResume === 'yes' ? form.resumeDate : '',
       salvage: lines(form.salvage),
       link: form.link.trim(),
       createdAt: form.startDate || new Date().toISOString().slice(0, 10),
       buriedAt: form.lastActive || new Date().toISOString().slice(0, 10),
-            willRestart: form.willRestart === 'yes',
-      restartDate: form.willRestart === 'yes' ? form.restartDate : '',
     })
     navigate('/graveyard')
   }
 
-  // Validates the current step and moves to the next step if validation passes.
-  const next = () => {
-    // The project name is mandatory in the Basic Info step.
-    if (step === 0 && !form.name.trim()) {
-      setError('Project name is required')
-      return // Stop here if the project name is empty.
-    }
-
-    // Clear any previous validation error before proceeding.
-    setError('')
-
-    // Move to the next step of the form.
-        if (step === 3) {
-      save()
+  /* ---------------- Drop handler (final action) ---------------- */
+  const handleDrop = () => {
+    if (form.wantsResume === 'yes' && !form.resumeDate) {
+      setError('Please pick a date to resume')
       return
     }
+    save()
+  }
+
+  /* ---------------- Next / validation (steps 0-2) ---------------- */
+  const next = () => {
+    if (step === 0 && !form.name.trim()) {
+      setError('Project name is required')
+      return
+    }
+    setError('')
     setStep(step + 1)
   }
 
+  /* ---------------- UI ---------------- */
   return (
-    // Main page background image.
     <div
       className="min-h-screen bg-cover bg-center"
       style={{ backgroundImage: "url('/images/bury-bg.jpg')" }}
     >
-      {/* Adds a dark overlay so the text remains readable over the background. */}
-      <div className="min-h-screen bg-night/50">
-        {/* Shared navigation bar displayed at the top of the page. */}
+      <div className="min-h-screen bg-black/55">
         <Navbar />
 
         <main className="mx-auto max-w-6xl px-6 pb-16 pt-28">
-          {/* Page heading and short description. */}
-          <h1 className="font-metal text-5xl tracking-wide text-moon drop-shadow-[0_0_18px_rgba(142,230,160,0.45)] md:text-6xl">
-            Bury a Project
+          <h1 className="font-metal text-5xl tracking-wide text-[#f5d27a] drop-shadow-[0_0_18px_rgba(245,210,122,0.45)] md:text-6xl">
+            {editId ? 'Edit Project' : 'Bury a Project'}
           </h1>
-          <p className="mt-3 font-serif text-lg md:text-xl">
-            Give your unfinished idea a proper resting place.
+          <p className="mt-3 font-serif text-lg text-[#f5e6c0]/85 md:text-xl">
+            {editId
+              ? 'Update the details of your resting project.'
+              : 'Give your unfinished idea a proper resting place.'}
           </p>
 
-          {/* Progress indicator showing the four steps and the current step. */}
+          {/* ---------- Step indicator ---------- */}
           <div className="mt-10 flex items-start justify-between md:ml-auto md:w-[62%]">
             {steps.map((label, i) => (
-              // Each step gets a number, label, and visual state.
               <div key={label} className="flex flex-1 flex-col items-center text-center">
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold ${
                     i === step
-                      ? 'border-fern bg-moss text-fern shadow-[0_0_18px_rgba(142,230,160,0.7)]'
+                      ? 'border-[#f5d27a] bg-black text-[#f5d27a] shadow-[0_0_18px_rgba(245,210,122,0.7)]'
                       : i < step
-                      ? 'border-fern bg-fern text-night'
-                      : 'border-moon/30 bg-night/70 text-moon/60'
+                      ? 'border-[#d4a537] bg-[#d4a537] text-black'
+                      : 'border-[#f5e6c0]/30 bg-black/70 text-[#f5e6c0]/60'
                   }`}
                 >
-                  {/* Completed steps show a checkmark; other steps show their number. */}
                   {i < step ? '✓' : i + 1}
                 </div>
-                <span className={`mt-2 text-xs md:text-sm ${i === step ? 'text-fern' : 'text-moon/70'}`}>
+                <span
+                  className={`mt-2 text-xs md:text-sm ${
+                    i === step ? 'text-[#f5d27a]' : 'text-[#f5e6c0]/70'
+                  }`}
+                >
                   {label}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* Form container: its content changes according to the current step. */}
-          <div className="mt-8 rounded-2xl border border-fern/25 bg-night/75 p-6 backdrop-blur-sm md:ml-auto md:w-[62%] md:p-8">
-            {/* Step 1: collect the project's basic information. */}
+          {/* ---------- Form card ---------- */}
+          <div className="mt-8 rounded-2xl border-2 border-[#d4a537]/50 bg-gradient-to-b from-[#1c1608]/85 to-black/85 p-6 text-[#f5e6c0] backdrop-blur-sm md:ml-auto md:w-[62%] md:p-8">
+            {/* Step 1: Basic info */}
             {step === 0 && (
               <div className="space-y-5">
                 <div>
-                  <label className="mb-2 block">
+                  <label className={labelClass}>
                     Project name <span className="text-red-400">*</span>
                   </label>
                   <input
                     className={inputClass}
                     placeholder="e.g. My Next Big Idea"
                     value={form.name}
-                    // Update the project name whenever the user types.
                     onChange={(e) => update('name', e.target.value)}
                   />
-                  {/* Show a validation message if the required name is missing. */}
                   {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
                 </div>
 
                 <div>
-                  <label className="mb-2 block">Tags (comma separated)</label>
+                  <label className={labelClass}>Tags (comma separated)</label>
                   <input
                     className={inputClass}
                     placeholder="e.g. Web, Education, AI"
                     value={form.tags}
-                    // Store project categories or tags entered by the user.
                     onChange={(e) => update('tags', e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block">Link (GitHub / Drive / Figma)</label>
+                  <label className={labelClass}>Link (GitHub / Drive / Figma)</label>
                   <input
                     className={inputClass}
                     placeholder="https://"
                     value={form.link}
-                    // Store an optional link to the project's files or design.
                     onChange={(e) => update('link', e.target.value)}
                   />
                 </div>
 
-                {/* Display the two date inputs side by side on wider screens. */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-2 block">Start date</label>
+                    <label className={labelClass}>Start date</label>
                     <input
                       type="date"
                       className={inputClass}
                       value={form.startDate}
-                      // Record when the project was started.
                       onChange={(e) => update('startDate', e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block">Last active date</label>
+                    <label className={labelClass}>Last active date</label>
                     <input
                       type="date"
                       className={inputClass}
                       value={form.lastActive}
-                      // Record the last date on which the project was worked on.
                       onChange={(e) => update('lastActive', e.target.value)}
                     />
                   </div>
@@ -221,198 +246,215 @@ export default function Bury() {
               </div>
             )}
 
-            {/* Placeholder content for steps 2, 3, and 4.
-                These sections can be implemented later. */}
+            {/* Step 2: Vision and progress */}
             {step === 1 && (
-  <div className="space-y-5">
-    <div>
-      <label className="mb-2 block">What did you want to build?</label>
-      <textarea
-        rows={4}
-        className={inputClass}
-        placeholder="Describe the original vision of your project..."
-        value={form.vision}
-        onChange={(e) => update('vision', e.target.value)}
-      />
-    </div>
+              <div className="space-y-5">
+                <div>
+                  <label className={labelClass}>What did you want to build?</label>
+                  <textarea
+                    rows={4}
+                    className={inputClass}
+                    placeholder="Describe the original vision of your project..."
+                    value={form.vision}
+                    onChange={(e) => update('vision', e.target.value)}
+                  />
+                </div>
 
-    <div>
-      <label className="mb-2 block">What did you complete? (one per line)</label>
-      <textarea
-        rows={4}
-        className={inputClass}
-        placeholder={'Login page\nHome UI\nBasic search'}
-        value={form.completed}
-        onChange={(e) => update('completed', e.target.value)}
-      />
-    </div>
+                <div>
+                  <label className={labelClass}>What did you complete? (one per line)</label>
+                  <textarea
+                    rows={4}
+                    className={inputClass}
+                    placeholder={'Login page\nHome UI\nBasic search'}
+                    value={form.completed}
+                    onChange={(e) => update('completed', e.target.value)}
+                  />
+                </div>
 
-    <div>
-      <label className="mb-2 flex justify-between">
-        <span>How much was finished?</span>
-        <span className="font-semibold text-fern">{form.progress}%</span>
-      </label>
-      <input
-        type="range"
-        min="0"
-        max="100"
-        step="5"
-        className="w-full accent-[#f5d27a]"
-        value={form.progress}
-        onChange={(e) => update('progress', Number(e.target.value))}
-      />
-    </div>
-  </div>
-)}
+                <div>
+                  <label className={`${labelClass} flex justify-between`}>
+                    <span>How much was finished?</span>
+                    <span className="font-semibold">{form.progress}%</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    className="w-full accent-[#d4a537]"
+                    value={form.progress}
+                    onChange={(e) => update('progress', Number(e.target.value))}
+                  />
+                </div>
+              </div>
+            )}
 
-{step === 2 && (
-  <div className="space-y-5">
-    <div>
-      <label className="mb-2 block">What is still unfinished? (one per line)</label>
-      <textarea
-        rows={5}
-        className={inputClass}
-        placeholder={'Payment system\nMobile layout\nAdmin dashboard'}
-        value={form.unfinished}
-        onChange={(e) => update('unfinished', e.target.value)}
-      />
-    </div>
+            {/* Step 3: What is left */}
+            {step === 2 && (
+              <div className="space-y-5">
+                <div>
+                  <label className={labelClass}>What is still unfinished? (one per line)</label>
+                  <textarea
+                    rows={5}
+                    className={inputClass}
+                    placeholder={'Payment system\nMobile layout\nAdmin dashboard'}
+                    value={form.unfinished}
+                    onChange={(e) => update('unfinished', e.target.value)}
+                  />
+                </div>
 
-    <div>
-      <label className="mb-2 block">Parts worth saving (one per line)</label>
-      <textarea
-        rows={4}
-        className={inputClass}
-        placeholder={'Auth flow\nUI kit\nDataset'}
-        value={form.salvage}
-        onChange={(e) => update('salvage', e.target.value)}
-      />
-      <p className="mt-1 text-xs text-moon/60">
-        These become "Organ Donors" you can reuse in a new project.
-      </p>
-    </div>
-  </div>
-)}
+                <div>
+                  <label className={labelClass}>Parts worth saving (one per line)</label>
+                  <textarea
+                    rows={4}
+                    className={inputClass}
+                    placeholder={'Auth flow\nUI kit\nDataset'}
+                    value={form.salvage}
+                    onChange={(e) => update('salvage', e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-[#f5e6c0]/60">
+                    These become "Organ Donors" you can reuse in a new project.
+                  </p>
+                </div>
+              </div>
+            )}
 
-{step === 3 && (
-  <div className="space-y-5">
-    <div>
-      <label className="mb-2 block">Why did it die?</label>
-      <select
-        className={inputClass}
-        value={form.reason}
-        onChange={(e) => update('reason', e.target.value)}
-      >
-        <option value="">Select a reason</option>
-        <option value="Lost motivation">Lost motivation</option>
-        <option value="Ran out of time">Ran out of time</option>
-        <option value="Technical roadblock">Technical roadblock</option>
-        <option value="Team fell apart">Team fell apart</option>
-        <option value="Better idea came">Better idea came</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
+            {/* Step 4: Reason, epitaph, resume, drag & drop */}
+            {step === 3 && (
+              <div className="space-y-5">
+                <div>
+                  <label className={labelClass}>Why did you stop?</label>
+                  <select
+                    className={inputClass}
+                    value={form.reason}
+                    onChange={(e) => update('reason', e.target.value)}
+                  >
+                    <option className="bg-black" value="">Pick a reason</option>
+                    <option className="bg-black">Lost interest</option>
+                    <option className="bg-black">Time ran out</option>
+                    <option className="bg-black">Scope grew too big</option>
+                    <option className="bg-black">Got stuck technically</option>
+                    <option className="bg-black">Team drifted apart</option>
+                    <option className="bg-black">Something else came up</option>
+                  </select>
+                </div>
 
-    <div>
-      <label className="mb-2 block">Tell us more (optional)</label>
-      <textarea
-        rows={3}
-        className={inputClass}
-        placeholder="What really happened?"
-        value={form.reasonNote}
-        onChange={(e) => update('reasonNote', e.target.value)}
-      />
-    </div>
+                <div>
+                  <label className={labelClass}>Want to add a note?</label>
+                  <textarea
+                    rows={3}
+                    className={inputClass}
+                    placeholder="What really happened..."
+                    value={form.reasonNote}
+                    onChange={(e) => update('reasonNote', e.target.value)}
+                  />
+                </div>
 
-    <div>
-      <label className="mb-2 block">Epitaph (a short farewell)</label>
-      <input
-        className={inputClass}
-        placeholder="e.g. Gone too soon, never shipped"
-        value={form.epitaph}
-                onChange={(e) => update('epitaph', e.target.value)}
-      />
-    </div>
+                <div>
+                  <label className={labelClass}>Epitaph (a line for the tombstone)</label>
+                  <input
+                    className={inputClass}
+                    placeholder="e.g. Gone too soon, but never forgotten"
+                    value={form.epitaph}
+                    onChange={(e) => update('epitaph', e.target.value)}
+                  />
+                </div>
 
-    <div>
-      <label className="mb-2 block">Do you want to restart this project?</label>
-      <select
-        className={inputClass}
-        value={form.willRestart}
-        onChange={(e) => update('willRestart', e.target.value)}
-      >
-        <option value="">Select</option>
-        <option value="yes">Yes</option>
-        <option value="no">No</option>
-      </select>
-    </div>
+                <div>
+                  <label className={labelClass}>Do you want to resume this project?</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { v: 'yes', t: '🔥 Yes, someday' },
+                      { v: 'no', t: '😴 Not now' },
+                    ].map((o) => (
+                      <button
+                        key={o.v}
+                        type="button"
+                        onClick={() => {
+                          update('wantsResume', o.v)
+                          setError('')
+                        }}
+                        className={`rounded-xl border px-4 py-3 text-sm transition ${
+                          form.wantsResume === o.v
+                            ? 'border-[#f5d27a] bg-[#d4a537]/20 text-[#f5d27a] shadow-[0_0_14px_rgba(245,210,122,0.35)]'
+                            : 'border-[#d4a537]/25 bg-black/60 hover:border-[#d4a537]/60'
+                        }`}
+                      >
+                        {o.t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-    {form.willRestart === 'yes' && (
-      <div>
-        <label className="mb-2 block">When will you restart?</label>
-        <input
-          type="date"
-          className={inputClass}
-          value={form.restartDate}
-          onChange={(e) => update('restartDate', e.target.value)}
-        />
-      </div>
-    )}
-        <div className="border-t border-[#d4a537]/25 pt-5">
-      <p className="mb-3 text-center text-sm text-moon/70">
-        Final step: drag the card into a zone
-      </p>
-      <DragCard
-        id="bury-card"
-        title={form.name || 'Your project'}
-        subtitle={form.epitaph}
-        progress={form.progress}
-        icon={lines(form.salvage).length > 0 ? '♻️' : '🪦'}
-      />
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <DropZone
-          icon="⚰️"
-          label={editId ? 'Save Zone' : 'Bury Zone'}
-          hint={lines(form.salvage).length > 0 ? 'Clear salvage parts to bury' : 'Drop here to bury'}
-          onDrop={() => {
-            if (lines(form.salvage).length > 0 && !editId) return
-            save()
-          }}
-        />
-        <DropZone
-          icon="♻️"
-          label="Repurpose Zone"
-          hint={lines(form.salvage).length > 0 ? 'Drop here to repurpose' : 'Add parts worth saving first'}
-          onDrop={() => {
-            if (lines(form.salvage).length === 0 && !editId) return
-            save()
-          }}
-        />
-      </div>
-    </div>
-  </div>
-)}
+                {form.wantsResume === 'yes' && (
+                  <div>
+                    <label className={labelClass}>I want to start again from</label>
+                    <input
+                      type="date"
+                      min={new Date().toISOString().slice(0, 10)}
+                      className={inputClass}
+                      value={form.resumeDate}
+                      onChange={(e) => {
+                        update('resumeDate', e.target.value)
+                        setError('')
+                      }}
+                    />
+                  </div>
+                )}
+
+                {error && <p className="text-sm text-red-400">{error}</p>}
+
+                {/* Canvas Protocol: drag the card into a zone */}
+                <div className="border-t border-[#d4a537]/25 pt-5">
+                  <p className="mb-3 text-center text-sm text-[#f5e6c0]/70">
+                    Final step: drag the card into a zone
+                  </p>
+                  <DragCard
+                    id="bury-card"
+                    title={form.name || 'Your project'}
+                    subtitle={form.epitaph}
+                    progress={form.progress}
+                    icon={hasSalvage ? '♻️' : '🪦'}
+                  />
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <DropZone
+                      icon="⚰️"
+                      label={editId ? 'Save Zone' : 'Bury Zone'}
+                      hint={hasSalvage ? 'Clear salvage parts to bury' : 'Drop here to bury'}
+                      onDrop={() => {
+                        if (hasSalvage && !editId) return
+                        handleDrop()
+                      }}
+                    />
+                    <DropZone
+                      icon="♻️"
+                      label="Repurpose Zone"
+                      hint={hasSalvage ? 'Drop here to repurpose' : 'Add parts worth saving first'}
+                      onDrop={() => {
+                        if (!hasSalvage && !editId) return
+                        handleDrop()
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Navigation buttons for moving between form steps or leaving the page. */}
+          {/* ---------- Back / Next buttons (navigation only) ---------- */}
           <div className="mt-6 flex justify-between md:ml-auto md:w-[62%]">
             <button
-              // On the first step, return to the Graveyard page.
-              // On later steps, go back to the previous step.
-              onClick={() => (step === 0 ? navigate('/graveyard') : setStep(step - 1))}
-              className="rounded-lg border border-moon/30 bg-night/70 px-6 py-3 transition hover:border-fern"
-            >
-              {step === 0 ? 'Cancel' : '← Back'}
-            </button>
+  onClick={() => (step === 0 ? navigate(-1) : setStep(step - 1))}
+  className={`${goldBtn} px-6 py-3`}
+>
+  {step === 0 ? '← Back' : '← Back'}
+</button>
 
             {step < 3 && (
-  <button
-    onClick={next}
-    className="rounded-lg bg-fern/90 px-7 py-3 font-semibold text-night shadow-[0_0_20px_rgba(142,230,160,0.4)] transition hover:bg-fern"
-  >
-    Next →
-  </button>
-)}
+              <button onClick={next} className={`${goldBtn} px-7 py-3`}>
+                Next →
+              </button>
+            )}
           </div>
         </main>
       </div>

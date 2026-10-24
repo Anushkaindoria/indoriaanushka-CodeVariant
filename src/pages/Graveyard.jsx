@@ -15,7 +15,8 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import TombstoneCard from '../components/TombstoneCard'
 import { sampleProjects, statuses } from '../data/projects'
-import { getProjects } from '../utils/storage'
+import { getProjects, deleteProject } from '../utils/storage'
+import DropZone from '../components/DropZone'
 
 /* ------------------------------------------------------------------
  * Theme constants
@@ -37,7 +38,7 @@ export default function Graveyard() {
   const [year, setYear] = useState('All') // selected year filter
 
   // Load projects once: user-saved projects first, then sample projects
-  const [allProjects] = useState(() => [...getProjects(), ...sampleProjects])
+  const [allProjects, setAllProjects] = useState(() => [...getProjects(), ...sampleProjects])
 
   /* ---------------- Derived data ---------------- */
 
@@ -67,6 +68,14 @@ export default function Graveyard() {
 
   // Number of projects with a given status (shown on filter buttons)
   const count = (s) => allProjects.filter((p) => p.status === s).length
+  // Only user-created projects can be edited or deleted
+    const userIds = new Set(getProjects().map((p) => p.id))
+    
+      const handleDropDelete = (id) => {
+    if (!userIds.has(id)) return
+    deleteProject(id)
+    setAllProjects((prev) => prev.filter((x) => x.id !== id))
+  }
 
   /* ---------------- UI ---------------- */
   return (
@@ -147,6 +156,20 @@ export default function Graveyard() {
             </select>
           </div>
         </div>
+                {/* ---------- Delete Zone (drag a tombstone here) ---------- */}
+                <div className="mt-4 w-fit">
+          <div
+            title="Drag a tombstone here to delete"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault()
+              handleDropDelete(e.dataTransfer.getData('text/plain'))
+            }}
+            className="flex items-center gap-2 rounded-lg border border-dashed border-red-500/50 bg-black/60 px-4 py-2 text-sm text-red-300/90 backdrop-blur-sm transition hover:border-red-400 hover:bg-red-950/40"
+          >
+            🗑️ Delete
+          </div>
+        </div>
 
         {/* ---------- Project cards ---------- */}
         {projects.length === 0 ? (
@@ -157,7 +180,26 @@ export default function Graveyard() {
         ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {projects.map((p) => (
-              <TombstoneCard key={p.id} project={p} />
+                        <div
+              key={p.id}
+              className="relative"
+              draggable={userIds.has(p.id)}
+              onDragStart={(e) => e.dataTransfer.setData('text/plain', p.id)}
+            >
+                <TombstoneCard project={p} />
+
+                {/* Edit: only for user-created projects */}
+                {userIds.has(p.id) && (
+                <div className="absolute right-2 top-2 z-10 flex gap-2">
+                    <Link
+                    to={`/seance?edit=${p.id}`}
+                    className="rounded-md border border-[#d4a537]/60 bg-black/80 px-2.5 py-1 text-xs text-[#f5d27a] transition hover:border-[#f5d27a]"
+                    >
+                    Edit
+                    </Link>
+                </div>
+                )}
+            </div>
             ))}
           </div>
         )}
