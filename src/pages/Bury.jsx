@@ -2,6 +2,8 @@ import { useState } from 'react'
 import Navbar from '../components/Navbar'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { addProject, getProjects, deleteProject } from '../utils/storage'
+import DropZone from '../components/DropZone'
+import DragCard from '../components/DragCard'
 
 // Labels for the four steps of the project burial form.
 const steps = ['Basic Info', 'Vision & Progress', "What's Left", 'Reason & Epitaph']
@@ -68,7 +70,7 @@ export default function Bury() {
       name: form.name.trim(),
       icon: '🪦',
       years,
-      status: existing?.status || 'Buried',
+      status: lines(form.salvage).length > 0 ? 'Repurposed' : 'Buried',
       progress: form.progress,
       tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
       summary: form.vision.trim().slice(0, 100),
@@ -356,6 +358,38 @@ export default function Bury() {
         />
       </div>
     )}
+        <div className="border-t border-[#d4a537]/25 pt-5">
+      <p className="mb-3 text-center text-sm text-moon/70">
+        Final step: drag the card into a zone
+      </p>
+      <DragCard
+        id="bury-card"
+        title={form.name || 'Your project'}
+        subtitle={form.epitaph}
+        progress={form.progress}
+        icon={lines(form.salvage).length > 0 ? '♻️' : '🪦'}
+      />
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <DropZone
+          icon="⚰️"
+          label={editId ? 'Save Zone' : 'Bury Zone'}
+          hint={lines(form.salvage).length > 0 ? 'Clear salvage parts to bury' : 'Drop here to bury'}
+          onDrop={() => {
+            if (lines(form.salvage).length > 0 && !editId) return
+            save()
+          }}
+        />
+        <DropZone
+          icon="♻️"
+          label="Repurpose Zone"
+          hint={lines(form.salvage).length > 0 ? 'Drop here to repurpose' : 'Add parts worth saving first'}
+          onDrop={() => {
+            if (lines(form.salvage).length === 0 && !editId) return
+            save()
+          }}
+        />
+      </div>
+    </div>
   </div>
 )}
           </div>
@@ -371,13 +405,14 @@ export default function Bury() {
               {step === 0 ? 'Cancel' : '← Back'}
             </button>
 
-            <button
-              // Validate the current step and proceed to the next one.
-              onClick={next}
-              className="rounded-lg bg-fern/90 px-7 py-3 font-semibold text-night shadow-[0_0_20px_rgba(142,230,160,0.4)] transition hover:bg-fern"
-            >
-              {step === 3 ? (editId ? 'Save changes' : 'Bury it ⚰️') : 'Next →'}
-            </button>
+            {step < 3 && (
+  <button
+    onClick={next}
+    className="rounded-lg bg-fern/90 px-7 py-3 font-semibold text-night shadow-[0_0_20px_rgba(142,230,160,0.4)] transition hover:bg-fern"
+  >
+    Next →
+  </button>
+)}
           </div>
         </main>
       </div>

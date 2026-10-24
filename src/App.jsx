@@ -6,12 +6,8 @@ import Bury from './pages/Bury'
 import Graveyard from './pages/Graveyard'
 import ProjectDetail from './pages/ProjectDetail'
 import Compass from './pages/Compass'
-import { checkRestartReminders } from './utils/reminder'
 
 export default function App() {
-  useEffect(() => {
-    checkRestartReminders()
-  }, [])
 
   return (
     <Routes>

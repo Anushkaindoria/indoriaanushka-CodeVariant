@@ -108,7 +108,7 @@ export default function Graveyard() {
         {/* ---------- Filters: status buttons + sort + year ---------- */}
         <div className="mt-5 flex flex-wrap items-center gap-3">
           {/* Status filter buttons with counts */}
-          {['All', ...statuses].map((s) => (
+          {['All', 'Buried', 'Repurposed', 'Archived'].map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
