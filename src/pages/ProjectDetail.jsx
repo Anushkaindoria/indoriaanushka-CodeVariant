@@ -8,7 +8,7 @@
  * Theme: black + gold (matches Navbar, Auth and Graveyard)
  */
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Pencil, Compass, BookOpen, Skull, Clock, FileText, Info, Lock,
   ExternalLink, Zap, Trash2, Archive, Save, HeartCrack, Search, ListChecks,
@@ -133,7 +133,7 @@ function Row({ label, children }) {
 }
 
 // Button used in the Quick Actions panel (danger = red style)
-function ActionBtn({ icon: Icon, children, danger }) {
+function ActionBtn({ icon: Icon, children, danger,onClick }) {
   return (
     <button
       className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition ${
@@ -152,6 +152,9 @@ export default function ProjectDetail() {
   // Project id comes from the URL: /project/:id
   const { id } = useParams()
   const project = [...getProjects(), ...sampleProjects].find((p) => p && p.id === id)
+  const navigate = useNavigate()
+// Only user-created projects can be edited
+    const isUser = getProjects().some((p) => p.id === id)
 
   /* State */
   const [tab, setTab] = useState('overview') // active tab
@@ -192,9 +195,14 @@ export default function ProjectDetail() {
               <ArrowLeft className="h-4 w-4" /> Back to Graveyard
             </Link>
 
-            <button className={`${goldBtn} inline-flex items-center gap-2 text-sm`}>
-              <Pencil className="h-4 w-4" /> Edit
+            {isUser && (
+            <button
+                onClick={() => navigate(`/seance?edit=${project.id}`)}
+                className={`${goldBtn} inline-flex items-center gap-2 text-sm`}
+            >
+                <Pencil className="h-4 w-4" /> Edit
             </button>
+            )}
           </div>
 
           <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_380px]">
@@ -422,7 +430,11 @@ export default function ProjectDetail() {
               <Panel>
                 <PanelTitle icon={Zap}>Quick Actions</PanelTitle>
                 <div className="space-y-2 text-sm">
-                  <ActionBtn icon={Pencil}>Edit Project</ActionBtn>
+                  {isUser && (
+                    <ActionBtn icon={Pencil} onClick={() => navigate(`/seance?edit=${project.id}`)}>
+                        Edit Project
+                    </ActionBtn>
+                    )}
                   <ActionBtn icon={Archive}>Move to Archived</ActionBtn>
                   <ActionBtn icon={Trash2} danger>Delete</ActionBtn>
                 </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { addProject } from '../utils/storage'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { addProject, getProjects, deleteProject } from '../utils/storage'
 
 // Labels for the four steps of the project burial form.
 const steps = ['Basic Info', 'Vision & Progress', "What's Left", 'Reason & Epitaph']
@@ -14,6 +14,9 @@ const inputClass =
 export default function Bury() {
   // Allows navigation to another page, such as the Graveyard page.
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const editId = params.get('edit') // set when editing an existing project
+  const existing = editId ? getProjects().find((p) => p.id === editId) : null
 
   // Tracks the current step of the multi-step form.
   // Step 0 represents the Basic Info section.
@@ -23,23 +26,31 @@ export default function Bury() {
   const [error, setError] = useState('')
 
   // Stores all the information entered by the user about their project.
-  const [form, setForm] = useState({
-    name: '',
-    tags: '',
-    link: '',
-    startDate: '',
-    lastActive: '',
-    vision: '',
-    completed: '',
-    progress: 50,
-     unfinished: '',
-    salvage: '',
-        reason: '',
-    reasonNote: '',
-    epitaph: '',
-        willRestart: '',
-    restartDate: '',
-  })
+  const [form, setForm] = useState(
+    existing
+      ? {
+          name: existing.name || '',
+          tags: (existing.tags || []).join(', '),
+          link: existing.link || '',
+          startDate: existing.createdAt || '',
+          lastActive: existing.buriedAt || '',
+          vision: existing.vision || '',
+          completed: (existing.completed || []).join('\n'),
+          progress: existing.progress ?? 50,
+          unfinished: (existing.unfinished || []).join('\n'),
+          salvage: (existing.salvage || []).join('\n'),
+          reason: existing.reason || '',
+          reasonNote: existing.reasonNote || '',
+          epitaph: existing.epitaph || '',
+          wantsResume: existing.wantsResume ? 'yes' : 'no',
+          resumeDate: existing.resumeDate || '',
+        }
+      : {
+          name: '', tags: '', link: '', startDate: '', lastActive: '',
+          vision: '', completed: '', progress: 50, unfinished: '', salvage: '',
+          reason: '', reasonNote: '', epitaph: '', wantsResume: '', resumeDate: '',
+        }
+  )
 
   // Updates a specific form field while preserving the other field values.
   // Example: update('name', 'My Project') updates only the project name.
@@ -51,13 +62,13 @@ export default function Bury() {
     const y2 = form.lastActive.slice(0, 4)
     const years =
       y1 && y2 && y1 !== y2 ? `${y1} - ${y2}` : y1 || y2 || String(new Date().getFullYear())
-
+    if (editId) deleteProject(editId)
     addProject({
-      id: Date.now().toString(),
+      id: editId || Date.now().toString(),
       name: form.name.trim(),
       icon: '🪦',
       years,
-      status: 'Buried',
+      status: existing?.status || 'Buried',
       progress: form.progress,
       tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
       summary: form.vision.trim().slice(0, 100),
@@ -365,7 +376,7 @@ export default function Bury() {
               onClick={next}
               className="rounded-lg bg-fern/90 px-7 py-3 font-semibold text-night shadow-[0_0_20px_rgba(142,230,160,0.4)] transition hover:bg-fern"
             >
-              {step === 3 ? 'Bury it' : 'Next →'}
+              {step === 3 ? (editId ? 'Save changes' : 'Bury it ⚰️') : 'Next →'}
             </button>
           </div>
         </main>

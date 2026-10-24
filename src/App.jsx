@@ -4,7 +4,7 @@ import Landing from './pages/Landing'
 import Auth from './pages/Auth'
 import Bury from './pages/Bury'
 import Graveyard from './pages/Graveyard'
-import Bury from './pages/Bury'
+
 import ProjectDetail from './pages/ProjectDetail'
 import { checkRestartReminders } from './utils/reminder'
 

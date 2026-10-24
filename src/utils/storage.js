@@ -18,3 +18,7 @@ export function addProject(project) {
   const all = getProjects()
   localStorage.setItem(KEY, JSON.stringify([project, ...all]))
 }
+// Delete one saved project by id
+export function deleteProject(id) {
+  localStorage.setItem(KEY, JSON.stringify(getProjects().filter((p) => p.id !== id)))
+}
