@@ -1,6 +1,13 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
+/**
+ * Colors and glow for each project status.
+ *  - badge : pill color for the status label
+ *  - text  : skull icon color
+ *  - bar   : progress bar fill color
+ *  - glow  : drop-shadow around the tombstone (stronger on hover)
+ */
 const statusConfig = {
   Buried: {
     badge: 'bg-amber-300 text-stone-900 shadow-[0_0_16px_rgba(252,211,77,0.95)]',
@@ -34,6 +41,7 @@ const statusConfig = {
   },
 }
 
+// Small skull icon (inline SVG) shown next to the progress bar
 function Skull({ className }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" className={className}>
@@ -41,28 +49,43 @@ function Skull({ className }) {
     </svg>
   )
 }
+
+/**
+ * TombstoneCard
+ * ---------------------------------------------------------------
+ * One project shown as a tombstone image with its details written
+ * on the stone. Clicking it opens /project/:id.
+ * Sizes use container query units (cqw) so the text scales with
+ * the width of the card.
+ */
 export default function TombstoneCard({ project }) {
+  // Pick colors for this status (fallback to Buried)
   const cfg = statusConfig[project.status] || statusConfig.Buried
   const progress = project.progress ?? 0
+  // Show at most 3 tags so the stone does not overflow
   const tags = (project.tags || []).slice(0, 3)
 
   return (
+    // Lifts the card slightly on hover
     <motion.div className="@container" whileHover={{ y: -8 }} transition={{ type: 'spring', stiffness: 300 }}>
       <Link to={`/project/${project.id}`} className="group relative block aspect-[1086/1448] w-full">
+        {/* Tombstone background image */}
         <img
           src="/images/Tombstone.png"
           alt=""
           className={`absolute inset-0 h-full w-full object-contain transition duration-300 ${cfg.glow}`}
         />
 
-        {/* text sirf stone face ke andar */}
+        {/* Text area placed only on the stone face */}
         <div className="absolute bottom-[15%] left-[28%] right-[21%] top-[36%] flex flex-col items-center overflow-hidden rounded-xl bg-black/35 px-[2.5cqw] py-[2cqw] text-center [text-shadow:0_1px_4px_rgba(0,0,0,0.95)]">
+          {/* Status badge */}
           <span
             className={`rounded-full px-[4cqw] py-[1cqw] font-semibold [font-size:3.6cqw] [text-shadow:none] ${cfg.badge}`}
           >
             {project.status}
           </span>
 
+          {/* Project name, years and short summary */}
           <h3 className="mt-[1.8cqw] max-w-full break-words font-serif leading-tight text-stone-100 [font-size:6.6cqw]">
             {project.name}
           </h3>
@@ -71,6 +94,7 @@ export default function TombstoneCard({ project }) {
             {project.summary}
           </p>
 
+          {/* Bottom part: progress bar and tags */}
           <div className="mt-auto w-full">
             <div className="flex items-center gap-[2cqw] text-stone-100 [font-size:3.8cqw]">
               <Skull className={`h-[4.6cqw] w-[4.6cqw] shrink-0 ${cfg.text}`} />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 
 const questions = [
@@ -28,6 +29,7 @@ const actions = {
 }
 
 export default function Compass() {
+    const { id } = useParams()
   const [answers, setAnswers] = useState([null, null, null, null, null])
   const answered = answers.every((a) => a !== null)
   const score = answers.reduce((sum, a) => sum + (a ?? 0), 0)
@@ -47,6 +49,7 @@ export default function Compass() {
       <div className="min-h-screen bg-night/50">
         <Navbar />
         <main className="mx-auto max-w-6xl px-6 pb-16 pt-28">
+          
           <h1 className="font-metal text-5xl tracking-wide text-moon md:text-6xl">
             Revival Compass
           </h1>
@@ -137,6 +140,14 @@ export default function Compass() {
               )}
             </div>
           </div>
+          <div className="mt-8">
+  <Link
+    to={`/project/${id}`}
+    className="inline-block rounded-lg border-2 border-[#d4a537] bg-gradient-to-b from-[#1c1608] to-black px-4 py-2 text-sm font-semibold text-[#f5d27a] shadow-[0_0_16px_rgba(212,165,55,0.35)] transition hover:border-[#f5d27a]"
+  >
+    ← Back
+  </Link>
+</div>
         </main>
       </div>
     </div>

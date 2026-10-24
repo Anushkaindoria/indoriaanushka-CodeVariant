@@ -1,3 +1,20 @@
+/**
+ * Sample project data
+ * ---------------------------------------------------------------
+ * seedProjects : demo projects copied into localStorage the first time
+ *                the app runs (see getProjects in utils/storage.js).
+ *                After that they behave like normal user projects, so
+ *                they can be edited, archived and deleted.
+ * sampleProjects : kept empty on purpose (older files still import it).
+ * statuses : all possible project statuses.
+ *
+ * Fields used by the pages:
+ *  - Graveyard cards : name, years, status, progress, summary, tags
+ *  - Bury / Edit form : vision, completed, unfinished, salvage, reason,
+ *                       reasonNote, epitaph, createdAt, buriedAt
+ *  - ProjectDetail    : story, reasons, features, techStack, startDate,
+ *                       lastActive, visibility, completion
+ */
 export const seedProjects = [
   {
     id: 'prepsport',
@@ -15,9 +32,11 @@ export const seedProjects = [
     unfinished: ['Backend', 'User accounts', 'Bookmarks'],
     reason: 'Lost time',
     reasonNote: 'Other commitments took over.',
-    salvage: ['Paper listing UI'],
+    salvage: ['Paper listing UI'], // parts worth reusing ("organ donors")
     createdAt: '2025-01-10',
     buriedAt: '2025-06-15',
+
+    // ProjectDetail page fields
     epitaph: 'A better way to prepare, waiting for its next chapter.',
     completion: 65,
     startDate: 'Jan 2025',
@@ -55,6 +74,8 @@ export const seedProjects = [
     salvage: ['Movie card UI'],
     createdAt: '2025-05-02',
     buriedAt: '2025-09-20',
+
+    // ProjectDetail page fields
     epitaph: 'The credits rolled before the story ended.',
     completion: 40,
     startDate: 'May 2025',
@@ -92,6 +113,8 @@ export const seedProjects = [
     salvage: ['Product grid', 'Landing page'],
     createdAt: '2024-10-05',
     buriedAt: '2025-01-18',
+
+    // ProjectDetail page fields
     epitaph: 'Grew an idea, never reached the harvest.',
     completion: 25,
     startDate: 'Oct 2024',
@@ -113,6 +136,9 @@ export const seedProjects = [
     techStack: ['React', 'CSS', 'JavaScript', 'Node.js', 'MongoDB'],
   },
 ]
+
 // Samples now live in localStorage (seeded once), so this stays empty
 export const sampleProjects = []
+
+// All possible project statuses
 export const statuses = ['Buried', 'Haunting', 'Resurrected', 'Repurposed', 'Archived']

@@ -3,8 +3,10 @@
  * ---------------------------------------------------------------
  * 4-step form to bury a project.
  *  - /seance            -> create a new project
- *  - /seance?edit=<id>  -> edit an existing user-created project
+ *  - /seance?edit=<id>  -> edit an existing project
  * Final step uses drag & drop (Canvas Protocol): no submit button.
+ * The project card is dragged into the Bury Zone (no salvage parts)
+ * or the Repurpose Zone (salvage parts present).
  * Projects are saved in localStorage via ../utils/storage.
  * Theme: black + gold (matches the rest of the app)
  */
@@ -16,14 +18,19 @@ import DragCard from '../components/DragCard'
 import { addProject, getProjects, deleteProject } from '../utils/storage'
 
 /* ---------------- Theme constants ---------------- */
+
+// Shared black + gold button style (same as Navbar)
 const goldBtn =
   'rounded-lg border-2 border-[#d4a537] bg-gradient-to-b from-[#1c1608] to-black px-4 py-2 font-semibold text-[#f5d27a] shadow-[0_0_16px_rgba(212,165,55,0.35)] transition hover:border-[#f5d27a] hover:text-[#ffe9a8] hover:shadow-[0_0_26px_rgba(245,210,122,0.65)]'
 
+// Style for every input / textarea / select in the form
 const inputClass =
   'w-full rounded-lg border border-[#d4a537]/30 bg-black/70 px-4 py-3 text-[#f5e6c0] placeholder:text-[#f5d27a]/40 outline-none transition focus:border-[#f5d27a] focus:shadow-[0_0_14px_rgba(245,210,122,0.35)]'
 
+// Style for field labels
 const labelClass = 'mb-2 block text-[#f5d27a]'
 
+// Titles shown in the step indicator
 const steps = ['Basic Info', 'Vision & Progress', "What's Left", 'Reason & Epitaph']
 
 // Empty form (all keys present so inputs are always controlled)
@@ -45,7 +52,8 @@ const emptyForm = {
   resumeDate: '',
 }
 
-// Convert a saved project back into form values (edit mode)
+// Convert a saved project back into form values (used in edit mode).
+// Lists are joined with new lines so they fit in a textarea.
 const toForm = (p) => ({
   name: p.name || '',
   tags: (p.tags || []).join(', '),
@@ -64,7 +72,7 @@ const toForm = (p) => ({
   resumeDate: p.resumeDate || '',
 })
 
-// Split a textarea into non-empty trimmed lines
+// Split a textarea into non-empty trimmed lines (one item per line)
 const lines = (t) => t.split('\n').map((s) => s.trim()).filter(Boolean)
 
 export default function Bury() {
@@ -76,12 +84,14 @@ export default function Bury() {
   const existing = editId ? getProjects().find((p) => p.id === editId) : null
 
   /* ---------------- State ---------------- */
-  const [step, setStep] = useState(0)
-  const [error, setError] = useState('')
+  const [step, setStep] = useState(0) // current step (0-3)
+  const [error, setError] = useState('') // validation message
   const [form, setForm] = useState(existing ? toForm(existing) : emptyForm)
 
+  // Update one field and keep the rest of the form unchanged
   const update = (field, value) => setForm({ ...form, [field]: value })
 
+  // True when the user listed any "parts worth saving"
   const hasSalvage = lines(form.salvage).length > 0
 
   /* ---------------- Save ---------------- */
@@ -101,6 +111,7 @@ export default function Bury() {
       name: form.name.trim(),
       icon: existing?.icon || '🪦',
       years,
+      // Salvage parts present -> Repurposed, otherwise Buried
       status: hasSalvage ? 'Repurposed' : 'Buried',
       progress: form.progress,
       tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
@@ -122,6 +133,7 @@ export default function Bury() {
   }
 
   /* ---------------- Drop handler (final action) ---------------- */
+  // Called when the card is dropped into a zone: validate, then save
   const handleDrop = () => {
     if (form.wantsResume === 'yes' && !form.resumeDate) {
       setError('Please pick a date to resume')
@@ -132,6 +144,7 @@ export default function Bury() {
 
   /* ---------------- Next / validation (steps 0-2) ---------------- */
   const next = () => {
+    // Project name is required on the first step
     if (step === 0 && !form.name.trim()) {
       setError('Project name is required')
       return
@@ -142,6 +155,7 @@ export default function Bury() {
 
   /* ---------------- UI ---------------- */
   return (
+    // Page background image with a dark overlay for readability
     <div
       className="min-h-screen bg-cover bg-center"
       style={{ backgroundImage: "url('/images/bury-bg.jpg')" }}
@@ -150,6 +164,7 @@ export default function Bury() {
         <Navbar />
 
         <main className="mx-auto max-w-6xl px-6 pb-16 pt-28">
+          {/* Heading changes between create and edit mode */}
           <h1 className="font-metal text-5xl tracking-wide text-[#f5d27a] drop-shadow-[0_0_18px_rgba(245,210,122,0.45)] md:text-6xl">
             {editId ? 'Edit Project' : 'Bury a Project'}
           </h1>
@@ -160,6 +175,7 @@ export default function Bury() {
           </p>
 
           {/* ---------- Step indicator ---------- */}
+          {/* Current step glows, finished steps show a tick */}
           <div className="mt-10 flex items-start justify-between md:ml-auto md:w-[62%]">
             {steps.map((label, i) => (
               <div key={label} className="flex flex-1 flex-col items-center text-center">
@@ -185,7 +201,7 @@ export default function Bury() {
             ))}
           </div>
 
-          {/* ---------- Form card ---------- */}
+          {/* ---------- Form card (content depends on the step) ---------- */}
           <div className="mt-8 rounded-2xl border-2 border-[#d4a537]/50 bg-gradient-to-b from-[#1c1608]/85 to-black/85 p-6 text-[#f5e6c0] backdrop-blur-sm md:ml-auto md:w-[62%] md:p-8">
             {/* Step 1: Basic info */}
             {step === 0 && (
@@ -223,6 +239,7 @@ export default function Bury() {
                   />
                 </div>
 
+                {/* Start and last active dates side by side */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className={labelClass}>Start date</label>
@@ -271,6 +288,7 @@ export default function Bury() {
                   />
                 </div>
 
+                {/* Progress slider (0-100%) */}
                 <div>
                   <label className={`${labelClass} flex justify-between`}>
                     <span>How much was finished?</span>
@@ -303,6 +321,7 @@ export default function Bury() {
                   />
                 </div>
 
+                {/* Parts worth saving: decides Buried vs Repurposed */}
                 <div>
                   <label className={labelClass}>Parts worth saving (one per line)</label>
                   <textarea
@@ -360,6 +379,7 @@ export default function Bury() {
                   />
                 </div>
 
+                {/* Resume question: Yes / No choice (selection, not an action) */}
                 <div>
                   <label className={labelClass}>Do you want to resume this project?</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -386,6 +406,7 @@ export default function Bury() {
                   </div>
                 </div>
 
+                {/* Date picker appears only when the user wants to resume */}
                 {form.wantsResume === 'yes' && (
                   <div>
                     <label className={labelClass}>I want to start again from</label>
@@ -417,6 +438,7 @@ export default function Bury() {
                     icon={hasSalvage ? '♻️' : '🪦'}
                   />
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    {/* Bury Zone: only when there are no salvage parts (always works in edit mode) */}
                     <DropZone
                       icon="⚰️"
                       label={editId ? 'Save Zone' : 'Bury Zone'}
@@ -426,6 +448,7 @@ export default function Bury() {
                         handleDrop()
                       }}
                     />
+                    {/* Repurpose Zone: only when salvage parts exist (always works in edit mode) */}
                     <DropZone
                       icon="♻️"
                       label="Repurpose Zone"
@@ -443,13 +466,15 @@ export default function Bury() {
 
           {/* ---------- Back / Next buttons (navigation only) ---------- */}
           <div className="mt-6 flex justify-between md:ml-auto md:w-[62%]">
+            {/* First step: go back to the previous page. Later steps: previous step. */}
             <button
-  onClick={() => (step === 0 ? navigate(-1) : setStep(step - 1))}
-  className={`${goldBtn} px-6 py-3`}
->
-  {step === 0 ? '← Back' : '← Back'}
-</button>
+              onClick={() => (step === 0 ? navigate(-1) : setStep(step - 1))}
+              className={`${goldBtn} px-6 py-3`}
+            >
+              ← Back
+            </button>
 
+            {/* Next is hidden on the last step (drag & drop replaces it) */}
             {step < 3 && (
               <button onClick={next} className={`${goldBtn} px-7 py-3`}>
                 Next →

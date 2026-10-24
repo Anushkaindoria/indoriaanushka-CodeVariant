@@ -2,18 +2,29 @@ import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { getCurrentUser, logout } from '../utils/auth'
 
+// Navigation links shown on the left side of the bar
 const links = [
   { to: '/', label: 'Home' },
 ]
 
-// black + gold button style (Home, Login, Logout teeno ke liye)
+// Shared black + gold button style (used by Home, Login and Logout)
 const goldBtn =
   'rounded-lg border-2 border-[#d4a537] bg-gradient-to-b from-[#1c1608] to-black px-4 py-2 font-semibold text-[#f5d27a] shadow-[0_0_16px_rgba(212,165,55,0.35)] transition hover:border-[#f5d27a] hover:text-[#ffe9a8] hover:shadow-[0_0_26px_rgba(245,210,122,0.65)]'
 
+/**
+ * Navbar
+ * ---------------------------------------------------------------
+ * Top bar shown on every page.
+ *  - Left  : Home link
+ *  - Right : logged-in user name + Logout, or a Login / Sign up link
+ */
 export default function Navbar() {
   const navigate = useNavigate()
+
+  // Current logged-in user (null when nobody is logged in)
   const [user, setUser] = useState(getCurrentUser())
 
+  // Log out, clear the user from state and go back to the landing page
   const handleLogout = () => {
     logout()
     setUser(null)
@@ -28,6 +39,7 @@ export default function Navbar() {
           key={l.to}
           to={l.to}
           end={l.to === '/'}
+          // Highlight the link when its route is active
           className={({ isActive }) =>
             `${goldBtn} ${
               isActive ? 'border-[#f5d27a] shadow-[0_0_26px_rgba(245,210,122,0.6)]' : ''

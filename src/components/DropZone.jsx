@@ -1,18 +1,37 @@
 import { useState } from 'react'
 
+/**
+ * DropZone
+ * ---------------------------------------------------------------
+ * An "Action Zone" for the Canvas Protocol. Instead of a button,
+ * the user drags a card (see DragCard) and drops it here to run
+ * an action (bury, repurpose, archive, delete, ...).
+ *
+ * Props:
+ *  - icon   : emoji shown at the top
+ *  - label  : zone title (e.g. "Bury Zone")
+ *  - hint   : small helper text under the title
+ *  - onDrop : function called with the dropped card's id
+ *  - danger : true -> red style (used for destructive actions)
+ */
 export default function DropZone({ icon, label, hint, onDrop, danger = false }) {
+  // True while a card is hovering over the zone (used for the glow effect)
   const [over, setOver] = useState(false)
 
   return (
     <div
+      // Required so the browser allows dropping on this element
       onDragOver={(e) => e.preventDefault()}
+      // Highlight the zone when a card enters / leaves
       onDragEnter={() => setOver(true)}
       onDragLeave={() => setOver(false)}
+      // On drop: stop highlighting and pass the card id to the parent
       onDrop={(e) => {
         e.preventDefault()
         setOver(false)
         onDrop(e.dataTransfer.getData('text/plain'))
       }}
+      // Style changes: red for danger zones, gold glow while hovering
       className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition ${
         danger
           ? over
