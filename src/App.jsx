@@ -20,7 +20,7 @@ export default function App() {
       <Route path="/seance" element={<Bury />} />
       <Route path="/graveyard" element={<Graveyard />} />
       <Route path="/project/:id" element={<ProjectDetail />} />
-      <Route path="/compass" element={<Compass />} />
+      <Route path="/compass/:id" element={<Compass />} />
     </Routes>
   )
 }
