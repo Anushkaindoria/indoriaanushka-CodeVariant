@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import { sampleProjects } from '../data/projects'
-import { getProjects } from '../utils/storage'
+import { getProjects, deleteProject } from '../utils/storage'
 
 /* ------------------------------------------------------------------
  * Theme constants
@@ -136,6 +136,7 @@ function Row({ label, children }) {
 function ActionBtn({ icon: Icon, children, danger,onClick }) {
   return (
     <button
+        onClick={onClick}
       className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition ${
         danger
           ? 'border-red-500/40 bg-red-950/20 text-red-400 hover:border-red-400'
@@ -177,6 +178,12 @@ export default function ProjectDetail() {
   const reasons = project.reasons || []
   const features = project.features || []
   const stack = project.techStack || []
+  // Delete this project (user-created only) and go back to the Graveyard
+    const handleDelete = () => {
+    if (!window.confirm(`Delete "${project.name}"? This cannot be undone.`)) return
+    deleteProject(project.id)
+    navigate('/graveyard')
+    }
 
   return (
     // Full-page background image
@@ -436,7 +443,11 @@ export default function ProjectDetail() {
                     </ActionBtn>
                     )}
                   <ActionBtn icon={Archive}>Move to Archived</ActionBtn>
-                  <ActionBtn icon={Trash2} danger>Delete</ActionBtn>
+                  {isUser && (
+                    <ActionBtn icon={Trash2} danger onClick={handleDelete}>
+                        Delete
+                    </ActionBtn>
+                    )}
                 </div>
               </Panel>
 

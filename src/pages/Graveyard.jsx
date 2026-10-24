@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import TombstoneCard from '../components/TombstoneCard'
 import { sampleProjects, statuses } from '../data/projects'
-import { getProjects } from '../utils/storage'
+import { getProjects, deleteProject } from '../utils/storage'
 
 /* ------------------------------------------------------------------
  * Theme constants
@@ -37,7 +37,7 @@ export default function Graveyard() {
   const [year, setYear] = useState('All') // selected year filter
 
   // Load projects once: user-saved projects first, then sample projects
-  const [allProjects] = useState(() => [...getProjects(), ...sampleProjects])
+  const [allProjects, setAllProjects] = useState(() => [...getProjects(), ...sampleProjects])
 
   /* ---------------- Derived data ---------------- */
 
@@ -67,6 +67,14 @@ export default function Graveyard() {
 
   // Number of projects with a given status (shown on filter buttons)
   const count = (s) => allProjects.filter((p) => p.status === s).length
+  // Only user-created projects can be edited or deleted
+    const userIds = new Set(getProjects().map((p) => p.id))
+    
+    const handleDelete = (p) => {
+    if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return
+    deleteProject(p.id)
+    setAllProjects((prev) => prev.filter((x) => x.id !== p.id))
+    }
 
   /* ---------------- UI ---------------- */
   return (
@@ -157,7 +165,27 @@ export default function Graveyard() {
         ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {projects.map((p) => (
-              <TombstoneCard key={p.id} project={p} />
+            <div key={p.id} className="relative">
+                <TombstoneCard project={p} />
+
+                {/* Edit / Delete: only for user-created projects */}
+                {userIds.has(p.id) && (
+                <div className="absolute right-2 top-2 z-10 flex gap-2">
+                    <Link
+                    to={`/seance?edit=${p.id}`}
+                    className="rounded-md border border-[#d4a537]/60 bg-black/80 px-2.5 py-1 text-xs text-[#f5d27a] transition hover:border-[#f5d27a]"
+                    >
+                    Edit
+                    </Link>
+                    <button
+                    onClick={() => handleDelete(p)}
+                    className="rounded-md border border-red-500/50 bg-black/80 px-2.5 py-1 text-xs text-red-400 transition hover:border-red-400"
+                    >
+                    Delete
+                    </button>
+                </div>
+                )}
+            </div>
             ))}
           </div>
         )}
